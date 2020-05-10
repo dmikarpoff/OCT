@@ -5,14 +5,15 @@
 
 struct LayerProperty
 {
-    double a;
-    double b;
-    double c;
-    double d;
-    double alpha;
-    double sigma;
-    int max_z;
-    double border_alpha;
+    double a = 0.0;
+    double b = 0.0;
+    double c = 0.0;
+    double d = 0.0;
+    double alpha = 0.5;
+    double sigma = 1.0;
+    int max_z = 1;
+    int border_aver_window = 1;
+    double border_alpha = 0.5;
 };
 
 inline LayerProperty Normalize(const LayerProperty& lp)

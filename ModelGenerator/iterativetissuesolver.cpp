@@ -1,5 +1,7 @@
 #include "iterativetissuesolver.h"
 
+#include <boost/circular_buffer.hpp>
+
 #include <cassert>
 #include <vector>
 #include <random>
@@ -62,7 +64,8 @@ void IterativeTissueSolver::generateBounds()
     layer_ranges_.back().to = height_ - 1;
     for (size_t i = 0; i < z_bounds_.size(); ++i)
     {
-        emit sigStep("Generate layer bounds", i, std::numeric_limits<double>::quiet_NaN());
+        emit sigStep("Generate layer bounds", static_cast<int>(i),
+                     std::numeric_limits<double>::quiet_NaN());
         const auto& cur_description = layer_prop_[i];
         int lower = i > 0 ? layer_prop_[i - 1].max_z + 1 : 1;
         int delta = layer_prop_[i].max_z - lower;
@@ -93,6 +96,16 @@ void IterativeTissueSolver::generateBounds()
             z_bounds_[i][j] = static_cast<int>(std::round(lower + delta *
                                 (raw_bound[j] - min_seq) / (max_seq - min_seq)));
         }
+        auto w = layer_prop_[i].border_aver_window;
+        int sum = w * z_bounds_[i][0];
+        boost::circular_buffer<int> values(w, z_bounds_[i][0]);
+        for (size_t j = 0; j < raw_bound.size(); ++j)
+        {
+            sum -= values.front();
+            sum += z_bounds_[i][j];
+            values.push_back(z_bounds_[i][j]);
+            z_bounds_[i][j] = sum / w;
+        }
     }
 }
 
@@ -103,7 +116,7 @@ void IterativeTissueSolver::estimateLayer(size_t idx)
     size_t height = layer_ranges_[idx].to - layer_ranges_[idx].from + 1;
     std::vector<std::vector<IdxValue>> A(width * height);
     const auto& layer_prop = layer_prop_[idx];
-    LinearIndexer index(width);
+    LinearIndexer index(static_cast<uint32_t>(width));
     for (uint32_t i = 0; i < height; ++i)
     {
         for (uint32_t j = 0; j < width; ++j)
@@ -156,7 +169,7 @@ void IterativeTissueSolver::estimateLayer(size_t idx)
         }
         iter++;
         d = distance(cur, next);
-        emit sigStep(stage, iter, d);
+        emit sigStep(stage, static_cast<int>(iter), d);
     } while (d > 1e-6);
     if (!stopped_)
     {
@@ -179,7 +192,7 @@ void IterativeTissueSolver::mergeSolution()
         auto layer_num = 0u;
         for (auto h = 0u; h < height_; ++h)
         {
-            if (z_bounds_.size() != layer_num && z_bounds_[layer_num][w] == h)
+            if (z_bounds_.size() != layer_num && z_bounds_[layer_num][w] == static_cast<int>(h))
             {
                 ++layer_num;
             }

@@ -45,6 +45,7 @@ const constexpr char kImgWidthTag[] = "img_width";
 const constexpr char kImgHeightTag[] = "img_height";
 const constexpr char kLowerColorTag[] = "lower_color";
 const constexpr char kUpperColorTag[] = "upper_color";
+const constexpr char kBorderMovingAverWindowTag[] = "border_moving_aver";
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -111,6 +112,7 @@ void MainWindow::loadSettings()
         lp.sigma = settings.value((kBorderSigmaTag + idx_str).c_str(), 1.0).toDouble();
         lp.border_alpha = settings.value((kBorderAlphaTag + idx_str).c_str(), 0.5).toDouble();
         lp.max_z = settings.value((kBorderMaxZTag + idx_str).c_str(), 1).toInt();
+        lp.border_aver_window = settings.value((kBorderMovingAverWindowTag + idx_str).c_str(), 1).toInt();
         if (i == count - 1)
         {
             lp.max_z = static_cast<int>(img_height_);
@@ -160,6 +162,7 @@ void MainWindow::saveSettings()
         settings.setValue((kBorderSigmaTag + idx_str).c_str(), lp.sigma);
         settings.setValue((kBorderAlphaTag + idx_str).c_str(), lp.border_alpha);
         settings.setValue((kBorderMaxZTag + idx_str).c_str(), lp.max_z);
+        settings.setValue((kBorderMovingAverWindowTag + idx_str).c_str(), lp.border_aver_window);
     }
 
     settings.setValue(kImgWidthTag, img_width_);

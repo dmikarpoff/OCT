@@ -37,6 +37,7 @@ void LayerPropertyWidget::SetLayerProperty(const LayerProperty &lp)
     ui->sbSigma->setValue(lp.sigma);
     ui->sbBorderAlpha->setValue(lp.border_alpha);
     ui->spinboxMaxZ->setValue(lp.max_z);
+    ui->sbBorderAver->setValue(lp.border_aver_window);
 }
 
 LayerPropertyWidget::~LayerPropertyWidget()
@@ -55,6 +56,7 @@ LayerProperty LayerPropertyWidget::GetLayerProperty() const
     prop.sigma = ui->sbSigma->value();
     prop.border_alpha = ui->sbBorderAlpha->value();
     prop.max_z = ui->spinboxMaxZ->value();
+    prop.border_aver_window = ui->sbBorderAver->value();
     return prop;
 }
 
