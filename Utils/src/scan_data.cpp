@@ -14,15 +14,17 @@ ScanData ScanData::fromFile(QString file_name)
     {
         throw std::runtime_error("Failed to open file with name " + file_name.toStdString());
     }
-    ScanData res{0, 0, {}};
-    res.raw_data_ = helpers::loadFromCsv(file, &res.width_, &res.height_);
-    return res;
+    size_t width = 0;
+    size_t height = 0;
+    std::vector<double> raw_data = helpers::loadFromCsv(file, &width, &height);
+    return ScanData(width, height, std::move(raw_data));
 }
 
 ScanData::ScanData(size_t width, size_t height, std::vector<double> raw_data)
     : width_(width)
     , height_(height)
-    , raw_data_(raw_data) {}
+    , raw_data_(std::move(raw_data))
+    , data_view_(new MatrixView<std::vector<double>>(raw_data_, width_)){}
 
 void ScanData::saveToFile(QString file_name) {
 

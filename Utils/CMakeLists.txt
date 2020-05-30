@@ -8,6 +8,7 @@ find_package(Qt5 COMPONENTS Core REQUIRED)
 
 set(public_headers
     include/oct_utils/scan_data.h
+    include/oct_utils/matrix_view.h
     include/oct_utils/export.h
 )
 
