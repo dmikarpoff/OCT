@@ -1,5 +1,6 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
+
+#include <oct_utils/scan_data.h>
 
 #include <QScopedPointer>
 #include <QMainWindow>
@@ -34,8 +35,5 @@ private:
     void onExportFile();
 
     QScopedPointer<Ui::MainWindow> ui;
-    std::vector<double> raw_data_;
-    size_t img_width_ = 0;
-    size_t img_height_ = 0;
+    oct::ScanData scan_data_;
 };
-#endif // MAINWINDOW_H

@@ -5,7 +5,7 @@ project(KalmanFilter)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(BOOST_ROOT ${CMAKE_SOURCE_DIR}/../boost_1_72_0/boost)
 set(BOOST_INCLUDEDIR ${CMAKE_SOURCE_DIR}/../boost_1_72_0)
-set(BOOST_LIBRARYDIR ${CMAKE_SOURCE_DIR}/../boost_1_72_0/lib64-msvc-14.0)
+set(BOOST_LIBRARYDIR ${CMAKE_SOURCE_DIR}/../boost_1_72_0/lib64-msvc-14.2)
 
 find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 find_package(Boost REQUIRED)
@@ -28,6 +28,10 @@ add_executable(kalman_filter
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
+    matrixmodel.cpp
+    matrixmodel.h
+    matrixitemdelegate.cpp
+    matrixitemdelegate.h
 )
 
 target_include_directories(kalman_filter
@@ -43,7 +47,11 @@ target_link_libraries(kalman_filter PRIVATE
     ${OCT_UTILS_LIBRARY}
 )
 
-target_compile_definitions(kalman_filter PRIVATE _USE_MATH_DEFINES)
+target_compile_definitions(kalman_filter PRIVATE
+    _USE_MATH_DEFINES
+    _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING
+
+)
 
 add_custom_command(
     TARGET kalman_filter POST_BUILD

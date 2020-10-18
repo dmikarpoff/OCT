@@ -6,8 +6,9 @@
 #include "tissuesolver.h"
 #include "iterativetissuesolver.h"
 #include "generationprogressdialog.h"
-#include "model_export.h"
-#include "image_utils.h"
+
+#include <oct_utils/image_utils.h>
+#include <oct_utils/scan_data.h>
 
 #include <QFileDialog>
 #include <QMenuBar>
@@ -50,6 +51,7 @@ const constexpr char kBorderMovingAverWindowTag[] = "border_moving_aver";
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , scan_data_(0, 0, {})
 {
     ui->setupUi(this);
     ui->toolBoxModelLayer->removeItem(0);
@@ -97,8 +99,8 @@ void MainWindow::loadSettings()
 {
     QSettings settings(QSettings::IniFormat, QSettings::UserScope,
                        QCoreApplication::organizationName(), QCoreApplication::applicationName());
-    img_width_ = settings.value(kImgWidthTag, 640).toInt();
-    img_height_ = settings.value(kImgHeightTag, 480).toInt();
+    int img_width = settings.value(kImgWidthTag, 640).toInt();
+    int img_height = settings.value(kImgHeightTag, 480).toInt();
     int count = settings.value(kLayerNumberTag, 0).toInt();
     for (int i = 0; i < count; ++i)
     {
@@ -115,7 +117,7 @@ void MainWindow::loadSettings()
         lp.border_aver_window = settings.value((kBorderMovingAverWindowTag + idx_str).c_str(), 1).toInt();
         if (i == count - 1)
         {
-            lp.max_z = static_cast<int>(img_height_);
+            lp.max_z = static_cast<int>(img_height);
         }
         ui->toolBoxModelLayer->addItem(new LayerPropertyWidget(lp),
                                        QString("Layer %1").arg(i));
@@ -130,8 +132,8 @@ void MainWindow::loadSettings()
         }
     );
 
-    ui->sbWidth->setValue(static_cast<int>(img_width_));
-    ui->sbHeight->setValue(static_cast<int>(img_height_));
+    ui->sbWidth->setValue(static_cast<int>(img_width));
+    ui->sbHeight->setValue(static_cast<int>(img_height));
     ui->colorLower->setColor(
         QColor::fromRgb(settings.value(kLowerColorTag, qRgb(255, 255, 255)).toUInt()));
     ui->colorUpper->setColor(
@@ -165,8 +167,8 @@ void MainWindow::saveSettings()
         settings.setValue((kBorderMovingAverWindowTag + idx_str).c_str(), lp.border_aver_window);
     }
 
-    settings.setValue(kImgWidthTag, img_width_);
-    settings.setValue(kImgHeightTag, img_height_);
+    settings.setValue(kImgWidthTag, ui->sbWidth->value());
+    settings.setValue(kImgHeightTag, ui->sbHeight->value());
     settings.setValue(kLowerColorTag, ui->colorLower->color().rgba());
     settings.setValue(kUpperColorTag, ui->colorUpper->color().rgba());
 }
@@ -188,14 +190,16 @@ void MainWindow::updateButtonEnabled()
 
 void MainWindow::updateImage()
 {
-    if (raw_data_.empty())
+    if (scan_data_.empty())
     {
         return;
     }
 
-    auto img_data = rawDataToRgb(raw_data_, ui->colorLower->color(), ui->colorUpper->color());
-    QImage img(img_data.data(), static_cast<int>(img_width_),
-               static_cast<int>(img_height_), QImage::Format_ARGB32);
+    size_t data_size = scan_data_.width() * scan_data_.height();
+    auto img_data = oct::rawDataToRgb(scan_data_.data(), data_size,
+                                      ui->colorLower->color(), ui->colorUpper->color());
+    QImage img(img_data.data(), static_cast<int>(scan_data_.width()),
+               static_cast<int>(scan_data_.height()), QImage::Format_ARGB32);
     ui->labelModelImage->setPixmap(QPixmap::fromImage(std::move(img)));
 }
 
@@ -219,7 +223,7 @@ void MainWindow::reinitLayerBounds()
         first->SetMaxZMinimum(1);
         auto last = qobject_cast<LayerPropertyWidget*>(
                         ui->toolBoxModelLayer->widget(ui->toolBoxModelLayer->count() - 1));
-        last->SetMaxZMaximum(static_cast<int>(img_height_));
+        last->SetMaxZMaximum(ui->sbHeight->value());
     }
     for_each_layer_widget(ui->toolBoxModelLayer,
         [this](auto* layer_descr, int idx)
@@ -291,11 +295,11 @@ void MainWindow::onGenerateClicked()
     {
         return;
     }
-    img_width_ = ui->sbWidth->value();
-    img_height_ = ui->sbHeight->value();
+    auto width = ui->sbWidth->value();
+    auto height = ui->sbHeight->value();
 
     QThread worker_thread(this);
-    Solver solver(nullptr, layers, img_width_, img_height_);
+    Solver solver(nullptr, layers, width, height);
     solver.moveToThread(&worker_thread);
     GenerationProgressDialog dialog(&worker_thread);
 
@@ -309,7 +313,7 @@ void MainWindow::onGenerateClicked()
 
     auto data = solver.extractData();
     if (!data.empty()) {
-        raw_data_ = std::move(data);
+        scan_data_ = oct::ScanData(width, height, std::move(data));
         updateImage();
     }
 }
@@ -318,11 +322,14 @@ void MainWindow::onExportFile()
 {
     QString file_name = QFileDialog::getSaveFileName(this, "File to export image", "",
                                                      "Image (*.png);;Table (*.csv)");
-    if (file_name.isNull())
+    if (file_name.isNull() || scan_data_.empty())
     {
         return;
     }
-    export_model(file_name, img_width_, img_height_, raw_data_,
-                 ui->colorLower->color(), ui->colorUpper->color());
+    if (file_name.endsWith(".csv")) {
+        scan_data_.saveCsv(file_name);
+    } else if (file_name.endsWith(".png")) {
+        scan_data_.savePng(file_name, ui->colorLower->color(), ui->colorUpper->color());
+    }
 }
 

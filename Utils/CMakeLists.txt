@@ -4,16 +4,18 @@ project(oct_utils)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-find_package(Qt5 COMPONENTS Core REQUIRED)
+find_package(Qt5 COMPONENTS Core Gui REQUIRED)
 
 set(public_headers
     include/oct_utils/scan_data.h
     include/oct_utils/matrix_view.h
+    include/oct_utils/image_utils.h
     include/oct_utils/export.h
 )
 
 add_library(oct_utils SHARED
     src/scan_data.cpp
+    src/image_utils.cpp
     src/scan_data_loader.h
     ${public_headers}
 )
@@ -28,6 +30,7 @@ target_include_directories(oct_utils PRIVATE
 
 target_link_libraries(oct_utils PUBLIC
     Qt5::Core
+    Qt5::Gui
 )
 
 install(DIRECTORY include/oct_utils DESTINATION include)
@@ -42,5 +45,5 @@ install(TARGETS oct_utils
         CONFIGURATIONS Release
         RUNTIME DESTINATION Release/bin
         LIBRARY DESTINATION Release/lib
-        ARCHIVE DESTINATION Debug/lib
+        ARCHIVE DESTINATION Release/lib
 )
